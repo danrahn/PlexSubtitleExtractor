@@ -8,28 +8,8 @@ def process():
     blob_db, plex_db = find_database()
     save_dir = get_save_dir()
 
-    blobs = {}
-    with sqlite3.connect(blob_db) as conn:
-        conn.row_factory = sqlite3.Row
-        cur = conn.cursor()
-        cur.execute("SELECT linked_id, blob FROM blobs WHERE blob_type=3")
-        for row in cur.fetchall():
-            blobs[row[0]] = {}
-            blobs[row[0]]["blob"] = row[1]
-        cur.close()
-
-    with sqlite3.connect(plex_db) as conn:
-        conn.row_factory = sqlite3.Row
-        cur = conn.cursor()
-        for stream_id in blobs.keys():
-            cur.execute(f"SELECT parts.file, stream.codec, stream.language, stream.forced FROM media_streams AS stream INNER JOIN media_parts AS parts ON parts.id=stream.media_part_id WHERE stream.id={stream_id}")
-            row = cur.fetchall()
-            if not row:
-                print(f'Error grabbing associated file with stream id {stream_id}')
-                continue
-            row = row[0]
-            blobs[stream_id]["info"] = { "file" : row[0], "codec" : row[1], "language" : row[2], "forced" : row[3] }
-        cur.close()
+    blobs = get_subtitle_blobs(blob_db)
+    get_subtitle_details(blobs, plex_db)
 
     for subtitle in blobs.values():
         base = os.path.splitext(os.path.basename(subtitle["info"]["file"]))[0]
@@ -45,6 +25,36 @@ def process():
             except:
                 print('ERROR: Could not write data. Data snippet:')
                 print(data[:100])
+
+def get_subtitle_blobs(database):
+    """
+    Return the gzip'd subtitle blobs stored in the Plex blob database
+    """
+
+    blobs = {}
+    with sqlite3.connect(database) as conn:
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute("SELECT linked_id, blob FROM blobs WHERE blob_type=3")
+        for row in cur.fetchall():
+            blobs[row[0]] = {}
+            blobs[row[0]]["blob"] = row[1]
+        cur.close()
+    return blobs
+
+def get_subtitle_details(blobs, database):
+    with sqlite3.connect(database) as conn:
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        for stream_id in blobs.keys():
+            cur.execute(f"SELECT parts.file, stream.codec, stream.language, stream.forced FROM media_streams AS stream INNER JOIN media_parts AS parts ON parts.id=stream.media_part_id WHERE stream.id={stream_id}")
+            row = cur.fetchall()
+            if not row:
+                print(f'Error grabbing associated file with stream id {stream_id}')
+                continue
+            row = row[0]
+            blobs[stream_id]["info"] = { "file" : row[0], "codec" : row[1], "language" : row[2], "forced" : row[3] }
+        cur.close()
 
 def find_database():
     """
@@ -86,6 +96,8 @@ def get_save_dir():
             except OSError:
                 print('Sorry, something went wrong attempting to create the save directory.')
         save_dir = input('Where do you want to save your extracted subtitles (full path)? ')
+    
+    return save_dir
 
 def get_yes_no(prompt):
     """
