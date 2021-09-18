@@ -11,20 +11,9 @@ def process():
     blobs = get_subtitle_blobs(blob_db)
     get_subtitle_details(blobs, plex_db)
 
-    for subtitle in blobs.values():
-        base = os.path.splitext(os.path.basename(subtitle["info"]["file"]))[0]
-        base += f'.{subtitle["info"]["language"]}'
-        if subtitle['info']['forced'] == 1:
-            base += '.forced'
-        base += f'.{subtitle["info"]["codec"]}'
-        data = gzip.decompress(subtitle['blob'])
-        print(f'Writing {base}')
-        with open(os.path.join(save_dir, base), 'wb') as sub_file:
-            try:
-                sub_file.write(data)
-            except:
-                print('ERROR: Could not write data. Data snippet:')
-                print(data[:100])
+    write_subtitles(blobs, save_dir)
+    print('Done!')
+
 
 def get_subtitle_blobs(database):
     """
@@ -42,7 +31,12 @@ def get_subtitle_blobs(database):
         cur.close()
     return blobs
 
+
 def get_subtitle_details(blobs, database):
+    """
+    Take the given blobs and find the file they're associated with, updating the given blobs with that infomation.
+    """
+
     with sqlite3.connect(database) as conn:
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
@@ -55,6 +49,28 @@ def get_subtitle_details(blobs, database):
             row = row[0]
             blobs[stream_id]["info"] = { "file" : row[0], "codec" : row[1], "language" : row[2], "forced" : row[3] }
         cur.close()
+
+
+def write_subtitles(blobs, save_dir):
+    """
+    Write the given subtitles to the given save directory
+    """
+
+    for subtitle in blobs.values():
+        base = os.path.splitext(os.path.basename(subtitle["info"]["file"]))[0]
+        base += f'.{subtitle["info"]["language"]}'
+        if subtitle['info']['forced'] == 1:
+            base += '.forced'
+        base += f'.{subtitle["info"]["codec"]}'
+        data = gzip.decompress(subtitle['blob'])
+        print(f'Writing {base}')
+        with open(os.path.join(save_dir, base), 'wb') as sub_file:
+            try:
+                sub_file.write(data)
+            except:
+                print('ERROR: Could not write data. Data snippet:')
+                print(data[:100])
+
 
 def find_database():
     """
@@ -82,6 +98,7 @@ def find_database():
     
     return os.path.join(db_base, blob_db), os.path.join(db_base, plex_db)
 
+
 def get_save_dir():
     """
     Ask the user where they want to save the subtitles
@@ -98,6 +115,7 @@ def get_save_dir():
         save_dir = input('Where do you want to save your extracted subtitles (full path)? ')
     
     return save_dir
+
 
 def get_yes_no(prompt):
     """
