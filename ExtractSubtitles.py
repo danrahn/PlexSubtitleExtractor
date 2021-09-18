@@ -6,16 +6,7 @@ import sqlite3
 
 def process():
     blob_db, plex_db = find_database()
-    save_dir = input('Where do you want to save your extracted subtitles (full path)? ')
-    while not os.path.isdir(save_dir):
-        create = ''
-        while not create or create[0].lower() not in ['y', 'n']:
-            create = input('That path does not exist. Would you like to create it (Y/N)? ')
-        if create[0].lower() == 'y':
-            try:
-                os.makedir(save_dir)
-            except OSError:
-                save_dir = input('Error creating save path, please enter another location: ')
+    save_dir = get_save_dir()
 
     blobs = {}
     with sqlite3.connect(blob_db) as conn:
@@ -56,6 +47,10 @@ def process():
                 print(data[:100])
 
 def find_database():
+    """
+    Attempt to automatically find the required Plex databases. If not found, ask the user to provide the full path to the 'Databases' folder
+    """
+
     blob_db = 'com.plexapp.plugins.library.blobs.db'
     plex_db = 'com.plexapp.plugins.library.db'
     system = platform.system().lower()
@@ -66,7 +61,7 @@ def find_database():
         db_base = os.path.join('~', 'Library', 'Application Support', 'Plex Media Server', 'Plug-in Support', 'Databases')
     elif system == 'linux' and 'PLEX_HOME' in os.environ:
         db_base = os.path.join(os.environ['PLEX_HOME'], 'Plex Media Server', 'Plug-in Support', 'Databases')
-    if len(db_base) > 0 and os.path.exists(db_base):
+    if len(db_base) > 0 and os.path.exists(db_base) and os.path.exists(os.path.join(db_base, blob_db)) and os.path.exists(os.path.join(db_base, plex_db)):
         blob_db = os.path.join(db_base, blob_db)
         plex_db = os.path.join(db_base, plex_db)
         return blob_db, plex_db
@@ -76,6 +71,31 @@ def find_database():
         db_base = input('That directory does not exist (or does not contain the Plex databases). Please enter the full path: ')
     
     return os.path.join(db_base, blob_db), os.path.join(db_base, plex_db)
+
+def get_save_dir():
+    """
+    Ask the user where they want to save the subtitles
+    """
+
+    save_dir = input('Where do you want to save your extracted subtitles (full path)? ')
+    while not os.path.isdir(save_dir):
+        if get_yes_no('That path does not exist. Would you like to create it'):
+            try:
+                os.makedirs(save_dir)
+                return save_dir
+            except OSError:
+                print('Sorry, something went wrong attempting to create the save directory.')
+        save_dir = input('Where do you want to save your extracted subtitles (full path)? ')
+
+def get_yes_no(prompt):
+    """
+    Return True or False depending on whether the user enters 'Y' or 'N'
+    """
+    while True:
+        response = input(f'{prompt} (y/n)? ')
+        ch = response.lower()[0] if len(response) > 0 else 'x'
+        if ch in ['y', 'n']:
+            return ch == 'y'
 
 
 process()
