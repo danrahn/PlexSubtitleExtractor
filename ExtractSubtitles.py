@@ -102,6 +102,11 @@ def find_database():
         db_base = os.path.join('~', 'Library', 'Application Support', 'Plex Media Server', 'Plug-in Support', 'Databases')
     elif system == 'linux' and 'PLEX_HOME' in os.environ:
         db_base = os.path.join(os.environ['PLEX_HOME'], 'Plex Media Server', 'Plug-in Support', 'Databases')
+
+    # Surrounding quotes aren't necessary
+    if len(db_base) > 0 and db_base[0] in ['"', "'"] and db_base[len(db_base) - 1] in ['"', "'"]:
+        db_base = db_base[1:len(db_base) - 1]
+
     if len(db_base) > 0 and os.path.exists(db_base) and os.path.exists(os.path.join(db_base, blob_db)) and os.path.exists(os.path.join(db_base, plex_db)):
         blob_db = os.path.join(db_base, blob_db)
         plex_db = os.path.join(db_base, plex_db)
