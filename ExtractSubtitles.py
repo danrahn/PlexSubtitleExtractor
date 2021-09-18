@@ -47,17 +47,13 @@ def process():
             base += '.forced'
         base += f'.{subtitle["info"]["codec"]}'
         data = gzip.decompress(subtitle['blob'])
-        open_as = 'wb'
-        if (subtitle['info']['codec'] in ['srt', 'ass', 'ssa']):
-            open_as = 'w'
-            data = data.decode().replace('\r\n', '\n')
         print(f'Writing {base}')
-        with open(os.path.join(save_dir, base), open_as, encoding='utf-8') as sub_file:
+        with open(os.path.join(save_dir, base), 'wb') as sub_file:
             try:
                 sub_file.write(data)
             except:
+                print('ERROR: Could not write data. Data snippet:')
                 print(data[:100])
-                break
 
 def find_database():
     blob_db = 'com.plexapp.plugins.library.blobs.db'
@@ -75,11 +71,11 @@ def find_database():
         plex_db = os.path.join(db_base, plex_db)
         return blob_db, plex_db
 
-    database_root = input('Could not find database directory. Please enter the full path to the "Databases" folder: ')
-    while not os.path.exists(database_root) or not os.path.isfile(os.path.join(database_root, blob_db)) or not os.path.isfile(os.path.join(database_root, plex_db)):
-        database_root = input('That directory does not exist (or does not contain the Plex databases). Please enter the full path: ')
+    db_base = input('Could not find database directory. Please enter the full path to the "Databases" folder: ')
+    while not os.path.exists(db_base) or not os.path.isfile(os.path.join(db_base, blob_db)) or not os.path.isfile(os.path.join(db_base, plex_db)):
+        db_base = input('That directory does not exist (or does not contain the Plex databases). Please enter the full path: ')
     
-    return os.path.join(database_root, blob_db), os.path.join(database_root, plex_db)
+    return os.path.join(db_base, blob_db), os.path.join(db_base, plex_db)
 
 
 process()
