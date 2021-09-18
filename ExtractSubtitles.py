@@ -3,6 +3,27 @@ import os
 import platform
 import sqlite3
 
+class SubtitleBlob:
+    """
+    Contains the details of a subtitle file stored in the Plex database
+    """
+
+    def __init__(self, stream_id, blob):
+        self.stream_id = stream_id
+        self.data = gzip.decompress(blob)
+
+    def set_info(self, file, codec, language, forced):
+        self.file = file
+        self.codec = codec
+        self.language = language
+        self.forced = forced
+    
+    def get_name(self):
+        filename = os.path.splitext(os.path.basename(self.file))[0]
+        filename += f'.{self.language}'
+        if self.forced == 1:
+            filename += '.forced'
+        return filename + f'.{self.codec}'
 
 def process():
     blob_db, plex_db = find_database()
@@ -26,8 +47,7 @@ def get_subtitle_blobs(database):
         cur = conn.cursor()
         cur.execute("SELECT linked_id, blob FROM blobs WHERE blob_type=3")
         for row in cur.fetchall():
-            blobs[row[0]] = {}
-            blobs[row[0]]["blob"] = row[1]
+            blobs[row[0]] = SubtitleBlob(row[0], row[1])
         cur.close()
     return blobs
 
@@ -47,7 +67,7 @@ def get_subtitle_details(blobs, database):
                 print(f'Error grabbing associated file with stream id {stream_id}')
                 continue
             row = row[0]
-            blobs[stream_id]["info"] = { "file" : row[0], "codec" : row[1], "language" : row[2], "forced" : row[3] }
+            blobs[stream_id].set_info(row[0], row[1], row[2], row[3])
         cur.close()
 
 
@@ -57,19 +77,14 @@ def write_subtitles(blobs, save_dir):
     """
 
     for subtitle in blobs.values():
-        base = os.path.splitext(os.path.basename(subtitle["info"]["file"]))[0]
-        base += f'.{subtitle["info"]["language"]}'
-        if subtitle['info']['forced'] == 1:
-            base += '.forced'
-        base += f'.{subtitle["info"]["codec"]}'
-        data = gzip.decompress(subtitle['blob'])
-        print(f'Writing {base}')
-        with open(os.path.join(save_dir, base), 'wb') as sub_file:
+        filename = subtitle.get_name()
+        print(f'Writing {filename}')
+        with open(os.path.join(save_dir, filename), 'wb') as sub_file:
             try:
-                sub_file.write(data)
+                sub_file.write(subtitle.data)
             except:
                 print('ERROR: Could not write data. Data snippet:')
-                print(data[:100])
+                print(subtitle.data[:100])
 
 
 def find_database():
