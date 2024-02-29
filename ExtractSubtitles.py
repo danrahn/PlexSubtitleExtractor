@@ -89,8 +89,8 @@ def process():
     log.write(f'ExtractSubtitles - New Run')
     log.write(f'\tArguments: ' + ' '.join(sys.argv))
 
-    if cmd_args.save_inline and cmd_args.output:
-        log.error_and_exit('Cannot specify both --save-inline and --output.')
+    if cmd_args.save_inline and cmd_args.output_dir:
+        log.error_and_exit('Cannot specify both --save-inline and --output-dir.')
         return
 
     if cmd_args.force and cmd_args.confirm_override:
