@@ -14,12 +14,14 @@ class SubtitleBlob:
     def __init__(self, stream_id, blob):
         self.stream_id = stream_id
         self.data = gzip.decompress(blob)
+        self.info_set = False
 
     def set_info(self, file, codec, language, forced):
         self.file = file
         self.codec = codec
         self.language = language
         self.forced = forced
+        self.info_set = True
     
     def get_name(self, inline):
         folder, basename = os.path.split(self.file)
@@ -160,6 +162,11 @@ def write_subtitles(blobs, save_dir, cmd_args):
     errored = 0
     for subtitle in blobs.values():
         total += 1
+        if not subtitle.info_set:
+            log.error(f'Could not find file name to match against for stream_id={subtitle.stream_id}, media file may no longer exist.')
+            errored += 1
+            continue
+
         filename = subtitle.get_name(save_dir == None)
         if save_dir:
             filename = os.path.join(save_dir, filename)
