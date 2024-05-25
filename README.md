@@ -25,8 +25,8 @@ Option | Description
 `-l`, `--log-file LOG_FILE` | Specify a file to save details about the extraction. Defaults to ExtractSubtitles.log in the current directory. If the file already exists, new log entries will be appended to the file.
 `--no-log` | Don't save script run information to a log file.
 `-f`, `--force` | Overwrite existing subtitle files. Default behavior is to ignore existing files.
-`c`, `--confirm-override` | If a file with the same name already exists, confirm whether it should be overwritten.
-`-d`, `--database-folder DATABASE_FOLDER` | Folder that container com.plexapp.plugins.library.db along with the blobs database.
+`-c`, `--confirm-override` | If a file with the same name already exists, confirm whether it should be overwritten.
+`-d`, `--database-folder DATABASE_FOLDER` | Folder that contains com.plexapp.plugins.library.\[blobs.\]db.
 `-v`, `--verbose` | Add additional information to the log file. No effect if `--no-log` is specified.
 
 ## Notes
